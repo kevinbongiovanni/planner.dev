@@ -44,6 +44,21 @@ function openfile($filename) {
 	savefile('todo.txt', $array);
 	}
 
+if (count($_FILES) > 0 && $_FILES['file1']['error'] == UPLOAD_ERR_OK) {
+    // Set the destination directory for uploads
+    $uploadDir = '/vagrant/sites/planner.dev/public/uploads/';
+
+    // Grab the filename from the uploaded file by using basename
+    $filename = basename($_FILES['file1']['name']);
+
+    // Create the saved filename using the file's original name and our upload directory
+    $savedFilename = $uploadDir . $filename;
+
+    // Move the file from the temp location to our uploads directory
+    move_uploaded_file($_FILES['file1']['tmp_name'], $savedFilename);
+}
+
+
 ?>
 <html>
 <head>
@@ -75,7 +90,13 @@ body {background-color: #FF0000}
 </ul>
 </p>
 
-<h3>	What to add to the list? </h3>
+		 <?php if (isset($savedFilename)) {
+        // If we did, show a link to the uploaded file
+        echo "<p>You can download your file <a href='/uploads/{$filename}'>here</a>.</p>";
+    }
+    ?>
+
+<!-- <h3>	What to add to the list? </h3>
 
 	<form method="POST" action="todo_list.php">
   		<p>
@@ -84,10 +105,23 @@ body {background-color: #FF0000}
   		</p>
 
   		<button type="submit">Submit</button>
-  
+<br>
+<br>
 
 
-	</form>
+	</form> -->
+
+	 <form method="POST" enctype="multipart/form-data">
+        <p>
+            <label for="file1">File to upload: </label>
+            <input type="file" id="file1" name="file1">
+        </p>
+        <p>
+            <input type="submit" value="Upload">
+        </p>
+    
+    </form>
+
 
 </body>
 
