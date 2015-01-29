@@ -1,50 +1,17 @@
-<!DOCTYPE html>
-
-<?php
-
-$array = [];
+<?
 
 
-function savefile ($filename, $array) {
-	$handle = fopen($filename, 'w');
-		foreach ($array as $item) {
-			fwrite($handle, $item . "\n");
-		}
-		fclose($handle);
-		echo "The save was successful.\n";
-}
 
-// $filename = 'todo.txt';
-// 	$handle = fopen($filename, 'r');
-// 	$contents = fread($handle, filesize($filename))
-// 	$array = explode("\n", $contents);
-// 	fclose($handle);
+require_once '../inc/todo_data_store.php';
 
-function openfile($filename) {
-	$handle = fopen($filename, 'r');
-	$contents = trim(fread($handle, filesize($filename)));
-	$array = explode("\n", $contents);
-	fclose($handle);
-	return $array;
-}
-	$array = openfile('todo.txt');
-	
+$to_do_list = new ToDoDataStore("todo.txt");
 
-	if(isset($_POST['todo'])) {
-		
-	$array[] = $_POST['todo'];
-	savefile('todo.txt', $array);
-	}
+$List = $to_do_list->read();
 
-	if(isset($_GET['remove'])) {
-		
-		$id = $_GET['remove'];
-		unset($array[$id]);
-
-	savefile('todo.txt', $array);
-	}
+var_dump($to_do_list);
 
 if (count($_FILES) > 0 && $_FILES['file1']['error'] == UPLOAD_ERR_OK) {
+    
     // Set the destination directory for uploads
     $uploadDir = '/vagrant/sites/planner.dev/public/uploads/';
 
@@ -56,7 +23,51 @@ if (count($_FILES) > 0 && $_FILES['file1']['error'] == UPLOAD_ERR_OK) {
 
     // Move the file from the temp location to our uploads directory
     move_uploaded_file($_FILES['file1']['tmp_name'], $savedFilename);
+
+        $newList = new ToDoDataStore($savedFilename);
+        $newArray = $newList->read();
+        // var_dump($newArray);
+        $List = array_merge($List, $newArray);
+        // var_dump($List);
+        $to_do_list->write($List);
 }
+
+if (!empty($_POST)) {
+    
+  var_dump($_POST);
+
+    try {
+
+        if (strlen($_POST["todo"]) > 30) {
+
+        throw new CustomException("Your task is too long, try to make is shorter!");
+        }
+
+        $List[] = $_POST['todo'];
+
+        $to_do_list->write($List);
+  
+    }
+
+    catch (CustomException $e) {
+
+        echo $e->getMessage();
+  
+    }
+
+} 
+
+ 
+
+if(isset($_GET['remove'])) {
+		
+	$id = $_GET['remove'];
+	unset($List[$id]);
+
+  $to_do_list->write($List);
+
+}
+
 
 
 ?>
@@ -65,71 +76,108 @@ if (count($_FILES) > 0 && $_FILES['file1']['error'] == UPLOAD_ERR_OK) {
 <title> To Do List</title>
 </head>
 
-<style>
-body {background-color: #FF0000}
-{color: #FFFFFF}
-</style>
 
 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+ 
+    <title>To Do List</title>
+ 
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+ 
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+ 
+  <body>
+ 
 
-
-
-
-<body>
-
-	<!-- <?php var_dump ($array) ?> -->
-
-<h2>	What to do today? </h2>
-<p>
-<ul>
-	<?php
-		foreach ($array as $key => $value) {
-			echo "<li>{$value} | <a href= \"/todo_list.php?remove={$key}\">X</a></li>";
-		}
-	?>
-</ul>
-</p>
-
-		 <?php if (isset($savedFilename)) {
-        // If we did, show a link to the uploaded file
-        echo "<p>You can download your file <a href='/uploads/{$filename}'>here</a>.</p>";
-    }
-    ?>
-
-<!-- <h3>	What to add to the list? </h3>
-
-	<form method="POST" action="todo_list.php">
-  		<p>
-        	<label for="todo">What else do i need to do?</label>
-        	<input id="todo" name="todo" type="text" placeholder="Add your task">
-  		</p>
-
-  		<button type="submit">Submit</button>
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar"> -->
+            <!-- <span class="sr-only">Toggle navigation</span> -->
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <!-- <a class="navbar-brand" href="#">Addresses</a> -->
+        </div>
+        
+      </div>
+    </nav>
+ 
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1>What do i need to do?</h1>
+      </div>
+    </div>
+ 
+  <div class="container">
+      <!-- Example row of columns -->
+     <div class="row">
+     	<div class="col-md-12">
+ 
+				
+			<form method="POST" action="todo_list.php">
+  				<p>
+        			<label for="todo">What else do i need to do?</label>
+        			<input id="todo" name="todo" type="text" placeholder="Add your task">
+  				</p>
+		
+			<button type="submit">Submit</button>
 <br>
 <br>
+			</form>
 
+	<table class="table table-striped">
+            <th>List</th>
 
-	</form> -->
+				<? foreach($List as $key => $value): ?>
+					<tr>
+							<td><?= $value ?></td>
+							<td class="delete"><a href="?remove=<?=$key?>">X</td>
+					</tr>
+				<? endforeach; ?>
+	</table>
 
-	 <form method="POST" enctype="multipart/form-data">
-        <p>
-            <label for="file1">File to upload: </label>
-            <input type="file" id="file1" name="file1">
-        </p>
-        <p>
-            <input type="submit" value="Upload">
-        </p>
-    
-    </form>
+			<form action="todo_list.php" method="post" enctype="multipart/form-data">
+			    <p>
+    				<label for="file1">File to upload: </label>
+    				<br>
+    				<input type="file" name="file1" id="file1">
+    			</p>
+				<br>
+				<br>
+   				<input type="submit" value="Upload File" name="submit">
+			</form>
+    	</div>
+      </div> 
 
-
-</body>
-
-
-
-
-
-
-
-
-
+    <hr>
+ 
+    <footer>
+        <p>&copy; Company 2014</p>
+    </footer>
+    </div> <!-- /container -->
+ 
+ 
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+  </body>
+</html>
